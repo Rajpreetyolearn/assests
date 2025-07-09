@@ -16,6 +16,9 @@ AWS_REGION = os.getenv("AWS_REGION")
 
 # Initialize S3 client (automatically uses keys from env)
 s3 = boto3.client("s3", region_name=AWS_REGION)
+@app.get("/")
+def root():
+    return {"status": "ok"}
 
 @app.post("/upload/")
 async def upload_to_s3(
