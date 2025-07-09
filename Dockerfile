@@ -13,3 +13,4 @@ COPY . .
 
 # Start the FastAPI server using uvicorn
 CMD ["uvicorn", "upload:app", "--host", "0.0.0.0", "--port", "8080"]
+# check again
