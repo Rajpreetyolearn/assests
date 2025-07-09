@@ -8,6 +8,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # 🚨 Add this line:
-EXPOSE 8080
+EXPOSE 8070
 
-CMD ["uvicorn", "upload:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["uvicorn", "upload:app", "--host", "0.0.0.0", "--port", "8070"]
