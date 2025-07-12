@@ -36,87 +36,74 @@ def test_service_info():
     """Test the service info endpoint"""
     response = client.get("/")
     assert response.status_code == 200
-    assert "service" in response.json()
+    assert "service_name" in response.json()
 
-def test_image_upload_base64():
-    """Test base64 image upload"""
-    test_image_b64 = create_test_image()
-    
-    data = {
-        "file_base64": test_image_b64,
-        "file_name": "test_image.png",
+def test_upload_image_base64():
+    """Test uploading a base64 encoded image"""
+    image_b64 = create_test_image()
+    payload = {
         "user_id": TEST_USER_ID,
+        "file_name": "test_image.png",
+        "file_base64": image_b64,
         "content_type": "image/png"
     }
-    
-    response = client.post("/upload/image", json=data)
+    response = client.post("/upload/image", json=payload)
     assert response.status_code == 200
-    result = response.json()
-    assert "s3_url" in result
-    assert "file_path" in result
-    assert result['s3_url'].startswith("https://")
+    data = response.json()
+    assert data["success"] is True
+    assert "uploaded_url" in data
+    assert data["uploaded_url"].startswith("https://")
+    assert "test_image.png" in data["uploaded_url"]
 
-def test_mermaid_rendering_and_upload():
-    """Test Mermaid diagram rendering and upload"""
-    mermaid_code = """
-    graph TD
-        A[Start] --> B[Process Data]
-        B --> C{Decision}
-        C -->|Yes| D[Success]
-        C -->|No| E[Error]
-    """
+def test_upload_image_file():
+    """Test uploading an image as a file"""
+    image = Image.new('RGB', (100, 50), color = 'red')
+    buffer = BytesIO()
+    image.save(buffer, format='JPEG')
+    buffer.seek(0)
     
-    data = {
+    files = {'file': ('test_file_upload.jpg', buffer, 'image/jpeg')}
+    data = {'user_id': TEST_USER_ID}
+    
+    response = client.post("/upload/image/file", files=files, data=data)
+    
+    assert response.status_code == 200
+    res_data = response.json()
+    assert res_data["success"] is True
+    assert "uploaded_url" in res_data
+    assert res_data["uploaded_url"].startswith("https://")
+    assert "test_file_upload.jpg" in res_data["uploaded_url"]
+
+def test_render_and_upload_mermaid():
+    """Test rendering a Mermaid diagram and uploading it"""
+    mermaid_code = "graph TD; A-->B;"
+    payload = {
         "mermaid_code": mermaid_code,
-        "file_name": "test_flowchart",
-        "user_id": TEST_USER_ID
-    }
-    
-    response = client.post("/render-and-upload/mermaid", json=data)
-    assert response.status_code == 200
-    result = response.json()
-    assert "s3_url" in result
-    assert "file_path" in result
-    assert result['file_path'].endswith('.png')
-
-def test_code_rendering_and_upload():
-    """Test rendering source code and uploading it"""
-    python_code = """
-import os
-
-def hello_world():
-    print("Hello, World!")
-"""
-    data = {
-        "code": python_code,
-        "language": "python",
-        "file_name": "hello_world_code.png",
         "user_id": TEST_USER_ID,
         "style": "default"
     }
-    
-    response = client.post("/render-and-upload/code", json=data)
+    response = client.post("/render-and-upload/mermaid", json=payload)
     assert response.status_code == 200
-    result = response.json()
-    assert "s3_url" in result
-    assert "file_path" in result
-    assert result['file_path'].endswith('.png')
+    data = response.json()
+    assert data["success"] is True
+    assert "uploaded_url" in data
+    assert data["uploaded_url"].startswith("https://")
+    assert ".png" in data["uploaded_url"]
 
-def test_image_file_upload():
-    """Test uploading an image file directly."""
-    image = Image.new('RGB', (100, 100), color = 'red')
-    image_bytes = BytesIO()
-    image.save(image_bytes, format='jpeg')
-    image_bytes.seek(0)
-
-    files = {'file': ('test_image.jpg', image_bytes, 'image/jpeg')}
-    data = {'user_id': TEST_USER_ID}
-    response = client.post("/upload/image/file", data=data, files=files)
-    
+def test_render_and_upload_code():
+    """Test rendering a code snippet and uploading it"""
+    code_snippet = "print('Hello, World!')"
+    payload = {
+        "code": code_snippet,
+        "language": "python",
+        "user_id": TEST_USER_ID
+    }
+    response = client.post("/render-and-upload/code", json=payload)
     assert response.status_code == 200
-    result = response.json()
-    assert "s3_url" in result
-    assert "file_path" in result
-    assert result['file_path'].endswith('.jpg')
+    data = response.json()
+    assert data["success"] is True
+    assert "uploaded_url" in data
+    assert data["uploaded_url"].startswith("https://")
+    assert ".png" in data["uploaded_url"]
 
 # To run these tests, execute `pytest` in your terminal. 
