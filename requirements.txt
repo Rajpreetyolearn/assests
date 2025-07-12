@@ -1,5 +1,10 @@
-fastapi
-uvicorn
-boto3
-python-dotenv
-python-multipart
+boto3==1.39.4
+fastapi==0.116.1
+httpx==0.28.1
+Pillow==11.3.0
+playwright==1.53.0
+pydantic==2.11.7
+Pygments==2.19.2
+python-dotenv==1.1.1
+Requests==2.32.4
+uvicorn==0.35.0
