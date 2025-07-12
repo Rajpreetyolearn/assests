@@ -97,9 +97,10 @@ Below is a detailed reference for each of the service's primary endpoints.
     *   `language` (str): The programming language (e.g., "python", "javascript").
     *   `style` (str, optional): The Pygments style for syntax highlighting. Defaults to "default".
     *   `file_name` (str): The desired base name for the output file.
-    *   `user_id` (str): An identifier for the user or session.
 *   **Response**: `UploadResponse`
-    *   `s3_url`: The public URL of the uploaded image.
+    *   `success` (bool): `true` if the upload was successful, `false` otherwise.
+    *   `uploaded_url` (str): The public URL of the uploaded image.
+    *   `message` (str): A message describing the result.
 
 ### `/render-and-upload/mermaid`
 *   **Method**: `POST`
@@ -107,9 +108,10 @@ Below is a detailed reference for each of the service's primary endpoints.
 *   **Request Body**: `MermaidRenderRequest`
     *   `mermaid_code` (str): The Mermaid diagram syntax.
     *   `file_name` (str): The desired base name for the output file.
-    *   `user_id` (str): An identifier for the user or session.
 *   **Response**: `UploadResponse`
-    *   `s3_url`: The public URL of the uploaded image.
+    *   `success` (bool): `true` if the upload was successful, `false` otherwise.
+    *   `uploaded_url` (str): The public URL of the uploaded image.
+    *   `message` (str): A message describing the result.
 
 ### `/upload/image`
 *   **Method**: `POST`
@@ -117,18 +119,28 @@ Below is a detailed reference for each of the service's primary endpoints.
 *   **Request Body**: `ImageUploadRequest`
     *   `file_base64` (str): The Base64 encoded image data.
     *   `file_name` (str): The desired base name for the output file.
-    *   `user_id` (str): An identifier for the user or session.
     *   `content_type` (str): The MIME type of the image (e.g., "image/png").
 *   **Response**: `UploadResponse`
-    *   `s3_url`: The public URL of the uploaded image.
+    *   `success` (bool): `true` if the upload was successful, `false` otherwise.
+    *   `uploaded_url` (str): The public URL of the uploaded image.
+    *   `message` (str): A message describing the result.
+
+### `/upload/image/file`
+*   **Method**: `POST`
+*   **Description**: Uploads an image file directly.
+*   **Request Body**: `multipart/form-data`
+    *   `file` (file): The image file to upload.
+*   **Response**: `UploadResponse`
+    *   `success` (bool): `true` if the upload was successful, `false` otherwise.
+    *   `uploaded_url` (str): The public URL of the uploaded image.
+    *   `message` (str): A message describing the result.
 
 ### `/upload/audio`
 *   **Method**: `POST`
-*   **Description**: Downloads audio from a URL and uploads it to S3.
-*   **Request Body**: `AudioUploadRequest`
-    *   `source_url` (str): The public URL of the audio file to download.
-    *   `file_name` (str): The desired base name for the output file.
-    *   `user_id` (str): An identifier for the user or session.
-    *   `content_type` (str): The MIME type of the audio (e.g., "audio/wav").
+*   **Description**: Uploads an audio file directly.
+*   **Request Body**: `multipart/form-data`
+    *   `file` (file): The audio file to upload.
 *   **Response**: `UploadResponse`
-    *   `s3_url`: The public URL of the uploaded audio file. 
+    *   `success` (bool): `true` if the upload was successful, `false` otherwise.
+    *   `uploaded_url` (str): The public URL of the uploaded audio file.
+    *   `message` (str): A message describing the result. 

@@ -23,21 +23,18 @@ class UploadResponse(BaseModel):
     message: str
 
 class ImageUploadRequest(BaseModel):
-    user_id: str
     file_name: str
     file_base64: str
     content_type: str
 
 class MermaidRenderRequest(BaseModel):
     mermaid_code: str
-    user_id: str
     style: str = "default"
     file_name: Optional[str] = None
 
 class CodeRenderRequest(BaseModel):
     code: str
     language: str
-    user_id: str
     style: str = "default"
     show_line_numbers: bool = True
     file_name: Optional[str] = None
@@ -119,14 +116,12 @@ async def render_mermaid_diagram(code: str, theme: str) -> bytes:
 # --- Endpoints ---
 @app.post("/upload/")
 async def upload_generic_file(
-    user_email: str = Form(...),
     file_type: str = Form(...),
     file: UploadFile = File(...)
 ):
     # Generate unique ID and timestamped object key
     unique_id = str(uuid.uuid4())
-    timestamp = datetime.utcnow().isoformat()
-    object_key = f"{file_type}/{unique_id}__{file.filename}"
+    object_key = f"{file_type}/{unique_id}/{file.filename}"
 
     # Upload to S3 (no ACL, assumes public access via bucket policy)
     content = await file.read()
@@ -155,8 +150,7 @@ async def upload_image(request: ImageUploadRequest):
     try:
         # Generate unique object key
         unique_id = str(uuid.uuid4())
-        timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
-        object_key = f"images/{request.user_id}/{timestamp}_{unique_id}_{request.file_name}"
+        object_key = f"images/{unique_id}/{request.file_name}"
         
         if request.file_base64:
             # Decode base64 and create a file stream
@@ -171,13 +165,12 @@ async def upload_image(request: ImageUploadRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/upload/image/file", response_model=UploadResponse)
-async def upload_image_file(user_id: str = Form(...), file: UploadFile = File(...)):
+async def upload_image_file(file: UploadFile = File(...)):
     """Upload an image file directly to S3."""
     try:
         # Generate unique object key
         unique_id = str(uuid.uuid4())
-        timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
-        object_key = f"images/{user_id}/{timestamp}_{unique_id}_{file.filename}"
+        object_key = f"images/{unique_id}/{file.filename}"
         
         # Read file content
         file_content = await file.read()
@@ -189,13 +182,12 @@ async def upload_image_file(user_id: str = Form(...), file: UploadFile = File(..
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/upload/audio", response_model=UploadResponse)
-async def upload_audio_file(user_id: str = Form(...), file: UploadFile = File(...)):
+async def upload_audio_file(file: UploadFile = File(...)):
     """Upload an audio file directly to S3."""
     try:
         # Generate unique object key
         unique_id = str(uuid.uuid4())
-        timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
-        object_key = f"audio/{user_id}/{timestamp}_{unique_id}_{file.filename}"
+        object_key = f"audio/{unique_id}/{file.filename}"
 
         # Read file content and upload
         file_content = await file.read()
@@ -221,7 +213,7 @@ async def handle_mermaid_render(request: MermaidRenderRequest):
         unique_id = str(uuid.uuid4())
         timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
         file_name = request.file_name or f"{timestamp}_{unique_id}.png"
-        object_key = f"generated/mermaid/{request.user_id}/{file_name}"
+        object_key = f"generated/mermaid/{unique_id}/{file_name}"
 
         # Upload the rendered image to S3
         public_url = await upload_to_s3_bucket(image_stream, object_key, "image/png")
@@ -243,7 +235,7 @@ async def handle_code_render(request: CodeRenderRequest):
         unique_id = str(uuid.uuid4())
         timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
         file_name = request.file_name or f"{timestamp}_{unique_id}.png"
-        object_key = f"generated/code/{request.user_id}/{file_name}"
+        object_key = f"generated/code/{unique_id}/{file_name}"
 
         # Upload the rendered image to S3
         public_url = await upload_to_s3_bucket(image_stream, object_key, "image/png")

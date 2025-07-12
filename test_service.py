@@ -14,8 +14,6 @@ from io import BytesIO
 # Create a TestClient instance
 client = TestClient(app)
 
-TEST_USER_ID = "test_user_123"
-
 def create_test_image() -> str:
     """Create a simple test image and return as base64"""
     image = Image.new('RGB', (200, 100), color='blue')
@@ -42,7 +40,6 @@ def test_upload_image_base64():
     """Test uploading a base64 encoded image"""
     image_b64 = create_test_image()
     payload = {
-        "user_id": TEST_USER_ID,
         "file_name": "test_image.png",
         "file_base64": image_b64,
         "content_type": "image/png"
@@ -63,9 +60,8 @@ def test_upload_image_file():
     buffer.seek(0)
     
     files = {'file': ('test_file_upload.jpg', buffer, 'image/jpeg')}
-    data = {'user_id': TEST_USER_ID}
     
-    response = client.post("/upload/image/file", files=files, data=data)
+    response = client.post("/upload/image/file", files=files)
     
     assert response.status_code == 200
     res_data = response.json()
@@ -79,7 +75,6 @@ def test_render_and_upload_mermaid():
     mermaid_code = "graph TD; A-->B;"
     payload = {
         "mermaid_code": mermaid_code,
-        "user_id": TEST_USER_ID,
         "style": "default"
     }
     response = client.post("/render-and-upload/mermaid", json=payload)
@@ -96,7 +91,6 @@ def test_render_and_upload_code():
     payload = {
         "code": code_snippet,
         "language": "python",
-        "user_id": TEST_USER_ID
     }
     response = client.post("/render-and-upload/code", json=payload)
     assert response.status_code == 200
