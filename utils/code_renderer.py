@@ -6,11 +6,12 @@ This utility uses Pygments to create syntax-highlighted HTML
 from source code and Playwright to render it as a PNG image.
 """
 
-from playwright.async_api import async_playwright
 from pygments import highlight
-from pygments.formatters import HtmlFormatter
+from pygments.formatters import ImageFormatter
 from pygments.lexers import get_lexer_by_name, guess_lexer
 from fastapi import HTTPException
+from PIL import Image
+import io
 
 async def render_code_to_image(
     code: str, 
@@ -19,7 +20,7 @@ async def render_code_to_image(
     show_line_numbers: bool = True
 ) -> bytes:
     """
-    Renders source code to a PNG image with syntax highlighting.
+    Renders source code to a PNG image with syntax highlighting using Pygments and Pillow.
 
     Args:
         code: The source code to render.
@@ -33,48 +34,37 @@ async def render_code_to_image(
     try:
         # Get the lexer for the specified language
         try:
-            lexer = get_lexer_by_name(language)
+            lexer = get_lexer_by_name(language, stripall=True)
         except Exception:
             # If the language is not found, try to guess it
-            lexer = guess_lexer(code)
+            lexer = guess_lexer(code, stripall=True)
 
-        # Create an HTML formatter with specified style and line numbers
-        formatter = HtmlFormatter(
+        # Create an Image formatter with specified style and line numbers
+        formatter = ImageFormatter(
             style=style, 
-            linenos=show_line_numbers, 
-            full=True,
-            cssclass="codehilite"
+            linenos=show_line_numbers,
+            font_name='Courier New',
+            font_size=24,
+            image_pad=20,
         )
         
-        # Generate the HTML
-        highlighted_code = highlight(code, lexer, formatter)
+        # Generate the image bytes
+        image_bytes = highlight(code, lexer, formatter)
         
-        # Launch Playwright to render the HTML
-        async with async_playwright() as p:
-            browser = await p.chromium.launch()
-            page = await browser.new_page()
+        # Add padding and a border using Pillow
+        with Image.open(io.BytesIO(image_bytes)) as img:
+            # Add padding
+            padded_img = Image.new(
+                "RGB", 
+                (img.width + 40, img.height + 40), 
+                color=formatter.style.background_color
+            )
+            padded_img.paste(img, (20, 20))
             
-            # Set the HTML content
-            await page.set_content(highlighted_code)
-            
-            # Find the code element and take a screenshot
-            element = await page.query_selector(".codehilite")
-            if not element:
-                raise Exception("Could not find highlighted code element.")
-
-            # Add some padding around the code
-            await page.evaluate("""
-                const element = document.querySelector('.codehilite');
-                if (element) {
-                    element.style.padding = '20px';
-                    element.style.borderRadius = '5px';
-                }
-            """)
-
-            image_bytes = await element.screenshot(type="png")
-            await browser.close()
-            
-            return image_bytes
+            # Save to a bytes buffer to return
+            output_buffer = io.BytesIO()
+            padded_img.save(output_buffer, format="PNG")
+            return output_buffer.getvalue()
 
     except Exception as e:
         raise HTTPException(
