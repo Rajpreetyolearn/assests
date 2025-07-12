@@ -11,7 +11,7 @@ import httpx
 from dotenv import load_dotenv
 from typing import Optional
 import asyncio
-from ...utils.code_renderer import render_code_to_image
+from app.utils.code_renderer import render_code_to_image
 
 # Load environment variables from .env
 load_dotenv()
