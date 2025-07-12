@@ -6,7 +6,7 @@ This script demonstrates how to use all the endpoints with example data.
 
 from fastapi.testclient import TestClient
 import pytest
-from upload import app  # Import your FastAPI app
+from app.main import app  # Import your FastAPI app
 import base64
 from PIL import Image
 from io import BytesIO
