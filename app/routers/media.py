@@ -21,8 +21,9 @@ router = APIRouter()
 # --- Pydantic Models ---
 class UploadResponse(BaseModel):
     success: bool
-    uploaded_url: str
+    uploaded_url: Optional[str] = None
     message: str
+    error: Optional[str] = None
 
 class ImageUploadRequest(BaseModel):
     file_name: str
@@ -149,28 +150,60 @@ async def upload_audio_file(file: UploadFile = File(...)):
 
 @router.post("/render-and-upload/mermaid", response_model=UploadResponse)
 async def handle_mermaid_render(request: MermaidRenderRequest):
+    """
+    Renders a Mermaid diagram to a PNG and uploads it to S3.
+    """
     try:
+        # Render the mermaid diagram to an image
         image_bytes = await render_mermaid_diagram(request.mermaid_code, request.style)
         image_stream = io.BytesIO(image_bytes)
+
+        # Generate a unique file name
         unique_id = str(uuid.uuid4())
         timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
         file_name = request.file_name or f"{timestamp}_{unique_id}.png"
         object_key = f"generated/mermaid/{unique_id}/{file_name}"
+
+        # Upload to S3
         public_url = await upload_to_s3_bucket(image_stream, object_key, "image/png")
+        
         return {"success": True, "uploaded_url": public_url, "message": "Mermaid diagram rendered and uploaded successfully"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to render and upload Mermaid diagram: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False, 
+                "message": "Failed to render and upload Mermaid diagram",
+                "error": str(e)
+            }
+        )
 
 @router.post("/render-and-upload/code", response_model=UploadResponse)
 async def handle_code_render(request: CodeRenderRequest):
+    """
+    Renders a code snippet to a PNG and uploads it to S3.
+    """
     try:
+        # Render the code to an image
         image_bytes = await render_code_to_image(request.code, request.language, request.style, request.show_line_numbers)
         image_stream = io.BytesIO(image_bytes)
+
+        # Generate a unique file name
         unique_id = str(uuid.uuid4())
         timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
         file_name = request.file_name or f"{timestamp}_{unique_id}.png"
         object_key = f"generated/code/{unique_id}/{file_name}"
+
+        # Upload to S3
         public_url = await upload_to_s3_bucket(image_stream, object_key, "image/png")
+        
         return {"success": True, "uploaded_url": public_url, "message": "Code snippet rendered and uploaded successfully"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to render and upload code: {str(e)}") 
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False, 
+                "message": "Failed to render and upload code",
+                "error": str(e)
+            }
+        ) 
